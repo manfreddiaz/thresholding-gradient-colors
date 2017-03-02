@@ -3,7 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 
-def abs_sobel_thresh(img, orient='x', thresh_min=0, thresh_max=255):
+def abs_sobel_thresh(img, orient='x', sobel_kernel=3, thresh_min=0, thresh_max=255):
     # Grayscale
     # Apply cv2.Sobel()
     # Take the absolute value of the output from cv2.Sobel()
@@ -12,9 +12,9 @@ def abs_sobel_thresh(img, orient='x', thresh_min=0, thresh_max=255):
     # Create binary_output
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     if orient == 'x':
-        sobel = cv2.Sobel(gray, cv2.CV_64F, 1, 0)
+        sobel = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
     else:
-        sobel = cv2.Sobel(gray, cv2.CV_64F, 0, 1)
+        sobel = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
 
     abs_sobel = np.absolute(sobel)
     scaled_sobel = np.uint8(255 * abs_sobel / np.max(abs_sobel))
@@ -74,13 +74,31 @@ def dir_threshold(img, sobel_kernel=3, thresh_min=0., thresh_max = np.pi / 2):
     return binary_output
 
 
-sample = cv2.imread("data/signs_vehicles_xygrad.png")
+# sample = cv2.imread("data/signs_vehicles_xygrad.png")
 
-plt.imshow(abs_sobel_thresh(sample, thresh_min=20, thresh_max=100), cmap='gray')
-plt.waitforbuttonpress()
+sample = cv2.imread("data/curved-lane.jpg")
+# plt.imshow(abs_sobel_thresh(sample, thresh_min=20, thresh_max=100), cmap='gray')
+# plt.waitforbuttonpress()
+#
+# plt.imshow(mag_thresh(sample, sobel_kernel=9, thresh_min=30, thresh_max=100), cmap='gray')
+# plt.waitforbuttonpress()
+#
+# plt.imshow(dir_threshold(sample, sobel_kernel=15, thresh_min=0.7, thresh_max=1.3), cmap='gray')
+# plt.waitforbuttonpress()
 
-plt.imshow(mag_thresh(sample, sobel_kernel=9, thresh_min=30, thresh_max=100), cmap='gray')
-plt.waitforbuttonpress()
+# Trying combinations
 
-plt.imshow(dir_threshold(sample, sobel_kernel=15, thresh_min=0.7, thresh_max=1.3), cmap='gray')
+# Choose a Sobel kernel size
+ksize = 11 # Choose a larger odd number to smooth gradient measurements
+
+# Apply each of the thresholding functions
+gradx = abs_sobel_thresh(sample, orient='x', sobel_kernel=ksize, thresh_min=20, thresh_max=100)
+grady = abs_sobel_thresh(sample, orient='y', sobel_kernel=ksize, thresh_min=20, thresh_max=100)
+mag_binary = mag_thresh(sample, sobel_kernel=ksize, thresh_min=30, thresh_max=100)
+dir_binary = dir_threshold(sample, sobel_kernel=ksize, thresh_min=0.7, thresh_max=1.3)
+
+combined = np.zeros_like(dir_binary)
+combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1))] = 1
+
+plt.imshow(combined, cmap='gray')
 plt.waitforbuttonpress()
